@@ -1,0 +1,17 @@
+{
+  "name": "Quizzino - Studio Smart & Flashcard",
+  "short_name": "Quizzino",
+  "description": "Impara velocemente con Flashcard 3D, Modalità Impara, Gioco Abbina, Ripetizione Dilazionata SM-2 e Generatore AI.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
