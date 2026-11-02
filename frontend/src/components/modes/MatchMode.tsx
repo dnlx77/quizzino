@@ -145,27 +145,26 @@ export const MatchMode: React.FC<MatchModeProps> = ({
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="max-w-5xl mx-auto px-2 sm:px-6 py-2 sm:py-6 space-y-2.5 sm:space-y-5">
       {/* Header & Live Stopwatch */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-2">
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-indigo-600 transition cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-indigo-600 transition cursor-pointer truncate max-w-[140px] sm:max-w-none"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>{deck.title}</span>
+          <ArrowLeft className="w-4 h-4 shrink-0" />
+          <span className="truncate">{deck.title}</span>
         </button>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {penaltyMs > 0 && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 text-xs font-bold">
-              <AlertTriangle className="w-3.5 h-3.5" />+
-              {(penaltyMs / 1000).toFixed(0)}s penalità
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 text-[10px] sm:text-xs font-bold shrink-0">
+              <AlertTriangle className="w-3 h-3" />+{(penaltyMs / 1000).toFixed(0)}s
             </span>
           )}
 
-          <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 font-mono font-extrabold text-lg">
-            <Timer className="w-5 h-5 text-amber-500" />
+          <div className="flex items-center gap-1.5 px-2.5 py-1 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 font-mono font-extrabold text-sm sm:text-lg shrink-0">
+            <Timer className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
             <span>{(totalTimeMs / 1000).toFixed(1)}s</span>
           </div>
 
@@ -216,15 +215,15 @@ export const MatchMode: React.FC<MatchModeProps> = ({
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <span className="font-semibold flex items-center gap-1.5">
-              <Zap className="w-4 h-4 text-amber-500" />
-              Tocca un Termine e la sua Definizione corrispondente per farli sparire! (Errore = +1.0s)
+          <div className="flex items-center justify-between text-[11px] sm:text-xs text-slate-400">
+            <span className="font-semibold flex items-center gap-1 truncate">
+              <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span className="truncate">Abbina ogni Termine con la sua Definizione! (Errore = +1s)</span>
             </span>
           </div>
 
-          {/* 12-Tile Match Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          {/* 12-Tile Match Grid: 3 colonne su mobile (3x4), 4 colonne su desktop (4x3) */}
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-3">
             {tiles.map((tile) => {
               const isSelected = selectedTileId === tile.tileId;
               const isWrong = wrongPairIds.includes(tile.tileId);
@@ -233,7 +232,7 @@ export const MatchMode: React.FC<MatchModeProps> = ({
                 return (
                   <div
                     key={tile.tileId}
-                    className="h-32 sm:h-36 rounded-2xl border-2 border-dashed border-emerald-300/30 dark:border-emerald-800/30 bg-emerald-50/10 flex items-center justify-center opacity-20 transition-all duration-300 scale-95"
+                    className="h-20 min-[380px]:h-22 sm:h-32 md:h-36 rounded-xl sm:rounded-2xl border-2 border-dashed border-emerald-300/30 dark:border-emerald-800/30 bg-emerald-50/10 flex items-center justify-center opacity-10 transition-all duration-300 scale-95"
                   />
                 );
               }
@@ -242,7 +241,7 @@ export const MatchMode: React.FC<MatchModeProps> = ({
                 <button
                   key={tile.tileId}
                   onClick={() => handleSelectTile(tile)}
-                  className={`h-32 sm:h-36 p-4 rounded-2xl border-2 text-center flex flex-col items-center justify-center transition-all cursor-pointer select-none ${
+                  className={`h-20 min-[380px]:h-22 sm:h-32 md:h-36 p-1.5 min-[380px]:p-2 sm:p-4 rounded-xl sm:rounded-2xl border-2 text-center flex flex-col items-center justify-center transition-all cursor-pointer select-none active:scale-95 ${
                     isWrong
                       ? 'animate-shake border-rose-500 bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-200'
                       : isSelected
@@ -251,7 +250,7 @@ export const MatchMode: React.FC<MatchModeProps> = ({
                   }`}
                 >
                   <span
-                    className={`text-[10px] font-extrabold uppercase tracking-wider mb-1 ${
+                    className={`text-[8px] min-[380px]:text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider mb-0.5 sm:mb-1 ${
                       tile.kind === 'term'
                         ? 'text-indigo-500'
                         : 'text-violet-500'
@@ -259,7 +258,7 @@ export const MatchMode: React.FC<MatchModeProps> = ({
                   >
                     {tile.kind === 'term' ? 'Termine' : 'Definizione'}
                   </span>
-                  <span className="text-xs sm:text-sm font-bold line-clamp-4 leading-snug">
+                  <span className="text-[11px] min-[380px]:text-xs sm:text-sm font-bold line-clamp-3 sm:line-clamp-4 leading-tight sm:leading-snug break-words">
                     {tile.text}
                   </span>
                 </button>
