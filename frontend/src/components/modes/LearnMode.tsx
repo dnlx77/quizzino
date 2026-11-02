@@ -17,6 +17,7 @@ import {
   getDisplayMeaningsList,
   speakText,
 } from '../../utils/tts';
+import { sfx } from '../../utils/soundEffects';
 
 interface LearnModeProps {
   deck: Deck;
@@ -236,6 +237,12 @@ export const LearnMode: React.FC<LearnModeProps> = ({
   ) => {
     if (!currentCard || feedback) return;
 
+    if (isCorrect) {
+      sfx.playCorrect();
+    } else {
+      sfx.playWrong();
+    }
+
     const firstTimeSeeing = !seenIds.includes(currentCard.id);
     if (firstTimeSeeing) {
       setSeenIds((prev) => [...prev, currentCard.id]);
@@ -281,6 +288,7 @@ export const LearnMode: React.FC<LearnModeProps> = ({
         )
       );
     } else {
+      sfx.playVictory();
       setIsCompleted(true);
       onCompleteQuiz(activeQueue.length);
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });

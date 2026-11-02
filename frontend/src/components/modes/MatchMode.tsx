@@ -10,6 +10,7 @@ import {
 import confetti from 'canvas-confetti';
 import { Deck } from '../../types/quizzino';
 import { getDisplayMeaningsList } from '../../utils/tts';
+import { sfx } from '../../utils/soundEffects';
 
 interface MatchModeProps {
   deck: Deck;
@@ -97,6 +98,7 @@ export const MatchMode: React.FC<MatchModeProps> = ({
     if (tile.matched || wrongPairIds.length > 0 || isFinished) return;
 
     if (!selectedTileId) {
+      sfx.playPlace();
       setSelectedTileId(tile.tileId);
       return;
     }
@@ -111,6 +113,7 @@ export const MatchMode: React.FC<MatchModeProps> = ({
 
     // Check if they belong to the same card and are opposite types (term vs definition)
     if (firstTile.cardId === tile.cardId && firstTile.kind !== tile.kind) {
+      sfx.playMatch();
       const updated = tiles.map((t) =>
         t.cardId === tile.cardId ? { ...t, matched: true } : t
       );
@@ -119,6 +122,7 @@ export const MatchMode: React.FC<MatchModeProps> = ({
 
       // Check victory
       if (updated.every((t) => t.matched)) {
+        sfx.playVictory();
         setIsRunning(false);
         setIsFinished(true);
         const finalTime = elapsedMs + penaltyMs;
@@ -130,6 +134,7 @@ export const MatchMode: React.FC<MatchModeProps> = ({
       }
     } else {
       // Mismatch! Penalty +1.0s & shake
+      sfx.playWrong();
       setWrongPairIds([firstTile.tileId, tile.tileId]);
       setPenaltyMs((prev) => prev + 1000);
       setSelectedTileId(null);

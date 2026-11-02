@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Sparkles,
   Flame,
@@ -13,9 +13,12 @@ import {
   User,
   LogOut,
   LogIn,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import { UserStats } from '../types/quizzino';
 import { AuthUser } from '../services/api';
+import { sfx } from '../utils/soundEffects';
 
 interface NavbarProps {
   stats: UserStats;
@@ -51,6 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onImportJson,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [soundEnabled, setSoundEnabled] = useState(sfx.isEnabled());
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -171,6 +175,22 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="hidden"
             />
           </div>
+
+          {/* Sound Effects Toggle */}
+          <button
+            onClick={() => {
+              const next = sfx.toggle();
+              setSoundEnabled(next);
+            }}
+            title={soundEnabled ? 'Disattiva effetti sonori' : 'Attiva effetti sonori'}
+            className="p-1.5 sm:p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-indigo-400 transition cursor-pointer"
+          >
+            {soundEnabled ? (
+              <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-500" />
+            ) : (
+              <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />
+            )}
+          </button>
 
           {/* Dark Mode Toggle */}
           <button

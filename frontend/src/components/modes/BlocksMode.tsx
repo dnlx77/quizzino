@@ -5,6 +5,7 @@ import {
   RotateCcw,
   Trophy,
   Volume2,
+  VolumeX,
   RefreshCw,
   Sparkles,
   HelpCircle,
@@ -16,6 +17,7 @@ import {
 import confetti from 'canvas-confetti';
 import { Deck, Flashcard } from '../../types/quizzino';
 import { checkWrittenAnswer, getDisplayMeaningsList, speakText } from '../../utils/tts';
+import { sfx } from '../../utils/soundEffects';
 
 interface BlocksModeProps {
   deck: Deck;
@@ -260,6 +262,7 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
   const [peekBoard, setPeekBoard] = useState(false);
   const [clearingCells, setClearingCells] = useState<Set<string>>(new Set());
   const [isClearing, setIsClearing] = useState(false);
+  const [soundMuted, setSoundMuted] = useState(!sfx.isEnabled());
 
   // Question Time Modal State
   const [isQuestionTime, setIsQuestionTime] = useState(false);
@@ -405,6 +408,13 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
       setClearingCells(destroyedSet);
       setGrid(newGrid); // Mostra il pezzo posizionato e la riga/colonna completata
 
+      // Suono combo o distruzione linea
+      if (linesCleared > 1 || combo > 0) {
+        sfx.playCombo();
+      } else {
+        sfx.playClear();
+      }
+
       // Effetto coriandoli per celebrare la distruzione
       confetti({
         particleCount: Math.min(25 * linesCleared, 60),
@@ -445,11 +455,16 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
           setIsGameOver(true);
           if (!deck.bestBlocksScore || newScore > deck.bestBlocksScore) {
             setIsNewRecord(true);
+            sfx.playVictory();
+          } else {
+            sfx.playGameOver();
           }
           onRecordBlocksScore(newScore);
         }
       }, 340);
     } else {
+      // Posizionamento singolo senza distruzione
+      sfx.playPlace();
       setCombo(0);
       setGrid(newGrid);
       const newScore = score + pointsEarned;
@@ -472,6 +487,9 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
         setIsGameOver(true);
         if (!deck.bestBlocksScore || newScore > deck.bestBlocksScore) {
           setIsNewRecord(true);
+          sfx.playVictory();
+        } else {
+          sfx.playGameOver();
         }
         onRecordBlocksScore(newScore);
       }
@@ -578,6 +596,7 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
 
     if (check.closeMatch || checkInverse.closeMatch) {
       // Risposta CORRETTA!
+      sfx.playCorrect();
       confetti({ particleCount: 50, spread: 60, origin: { y: 0.5 } });
       const newPieces = getRandomPieces();
       setAvailablePieces(newPieces);
@@ -589,11 +608,15 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
         setIsGameOver(true);
         if (!deck.bestBlocksScore || score > deck.bestBlocksScore) {
           setIsNewRecord(true);
+          sfx.playVictory();
+        } else {
+          sfx.playGameOver();
         }
         onRecordBlocksScore(score);
       }
     } else {
       // Errore: riduci tentativi
+      sfx.playWrong();
       const nextAttempts = attemptsLeft - 1;
       setAttemptsLeft(nextAttempts);
 
@@ -663,6 +686,22 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
         </button>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Toggle Audio SFX */}
+          <button
+            onClick={() => {
+              const next = sfx.toggle();
+              setSoundMuted(!next);
+            }}
+            className="p-1.5 sm:p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-indigo-600 transition cursor-pointer"
+            title={soundMuted ? 'Attiva effetti audio' : 'Disattiva effetti audio'}
+          >
+            {soundMuted ? (
+              <VolumeX className="w-4 h-4 text-slate-400" />
+            ) : (
+              <Volume2 className="w-4 h-4 text-indigo-500" />
+            )}
+          </button>
+
           <button
             onClick={() => setShowHowToPlay(true)}
             className="p-1.5 sm:p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-indigo-600 transition cursor-pointer"

@@ -14,6 +14,7 @@ import {
 import confetti from 'canvas-confetti';
 import { Deck, Flashcard, SM2Grade } from '../../types/quizzino';
 import { speakText } from '../../utils/tts';
+import { sfx } from '../../utils/soundEffects';
 
 interface FlashcardModeProps {
   deck: Deck;
@@ -59,9 +60,11 @@ export const FlashcardMode: React.FC<FlashcardModeProps> = ({
       if (!currentCard || isFinished) return;
 
       if (knewIt) {
+        sfx.playCorrect();
         setKnownIds((prev) => [...prev, currentCard.id]);
         onGradeCardSM2(currentCard.id, 2); // Buono
       } else {
+        sfx.playWrong();
         setReviewAgainIds((prev) => [...prev, currentCard.id]);
         onGradeCardSM2(currentCard.id, 0); // Da ripassare
       }
@@ -73,6 +76,7 @@ export const FlashcardMode: React.FC<FlashcardModeProps> = ({
           setCurrentIndex((prev) => prev + 1);
         }, 120);
       } else {
+        sfx.playVictory();
         setIsFinished(true);
         onCompleteSession(studyCards.length);
         if (knewIt && reviewAgainIds.length === 0) {
@@ -91,13 +95,18 @@ export const FlashcardMode: React.FC<FlashcardModeProps> = ({
     ]
   );
 
+  const toggleFlip = () => {
+    sfx.playCardFlip();
+    setIsFlipped((prev) => !prev);
+  };
+
   // Keyboard shortcuts
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (isFinished || !currentCard) return;
       if (e.code === 'Space') {
         e.preventDefault();
-        setIsFlipped((prev) => !prev);
+        toggleFlip();
       } else if (e.code === 'ArrowRight') {
         e.preventDefault();
         handleMarkCard(true);
@@ -327,7 +336,7 @@ export const FlashcardMode: React.FC<FlashcardModeProps> = ({
       {currentCard && (
         <div className="perspective-1000 w-full h-72 sm:h-96">
           <div
-            onClick={() => setIsFlipped(!isFlipped)}
+            onClick={toggleFlip}
             className={`relative w-full h-full rounded-3xl transition-transform duration-500 transform-style-3d cursor-pointer select-none ${
               isFlipped ? 'rotate-y-180' : ''
             }`}
