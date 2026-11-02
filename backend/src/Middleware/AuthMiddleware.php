@@ -5,8 +5,12 @@ require_once __DIR__ . '/../Utils/Jwt.php';
 
 class AuthMiddleware {
     public static function authenticate(): array {
-        $headers = getallheaders();
-        $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+        $headers = function_exists('getallheaders') ? getallheaders() : [];
+        $authHeader = $headers['Authorization'] 
+            ?? $headers['authorization'] 
+            ?? $_SERVER['HTTP_AUTHORIZATION'] 
+            ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] 
+            ?? '';
 
         if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
             Response::error('Autenticazione richiesta. Token mancante o non valido.', 401);

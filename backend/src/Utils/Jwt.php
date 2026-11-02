@@ -1,8 +1,10 @@
 <?php
 
+require_once __DIR__ . '/Env.php';
+
 class Jwt {
     private static function getSecret(): string {
-        return $_SERVER['JWT_SECRET'] ?? getenv('JWT_SECRET') ?: 'quizzino_secret_salt_2026_wamp_super_key_!#987';
+        return Env::get('JWT_SECRET', 'quizzino_secret_salt_2026_wamp_super_key_!#987');
     }
 
     private static function base64UrlEncode(string $data): string {
