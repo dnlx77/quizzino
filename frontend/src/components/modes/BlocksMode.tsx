@@ -245,6 +245,11 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
 
   const [availablePieces, setAvailablePieces] = useState<ActivePiece[]>(() => getRandomPieces());
   const [selectedPieceIndex, setSelectedPieceIndex] = useState<number | null>(null);
+  const [draggingPieceIndex, setDraggingPieceIndex] = useState<number | null>(null);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const [ghostCellSize, setGhostCellSize] = useState<number>(36);
+  const boardGridRef = useRef<HTMLDivElement>(null);
+  const hasDraggedRef = useRef<boolean>(false);
   const [hoverRow, setHoverRow] = useState<number | null>(null);
   const [hoverCol, setHoverCol] = useState<number | null>(null);
 
@@ -324,12 +329,12 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
   };
 
   // Place Selected Piece onto the Grid
-  const handlePlacePiece = (targetR: number, targetC: number) => {
-    if (selectedPieceIndex === null || !availablePieces[selectedPieceIndex] || isQuestionTime || isGameOver || isClearing) {
+  const handlePlacePiece = (targetR: number, targetC: number, pieceIdx: number | null = selectedPieceIndex) => {
+    if (pieceIdx === null || !availablePieces[pieceIdx] || isQuestionTime || isGameOver || isClearing) {
       return;
     }
 
-    const piece = availablePieces[selectedPieceIndex];
+    const piece = availablePieces[pieceIdx];
     if (!canPlacePiece(grid, piece.template.shape, targetR, targetC)) {
       return; // Non entra qui
     }
@@ -375,8 +380,10 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
     const linesCleared = fullRows.length + fullCols.length;
 
     // 3. Rimuovi il pezzo usato dai disponibili
-    const remainingPieces = availablePieces.filter((_, idx) => idx !== selectedPieceIndex);
+    const remainingPieces = availablePieces.filter((_, idx) => idx !== pieceIdx);
     setSelectedPieceIndex(null);
+    setDraggingPieceIndex(null);
+    setDragPos(null);
     setHoverRow(null);
     setHoverCol(null);
 
@@ -470,6 +477,95 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
       }
     }
   };
+
+  // Drag & Drop: gestione fluida del trascinamento del pezzo con mouse o touch
+  useEffect(() => {
+    if (draggingPieceIndex === null) return;
+
+    const piece = availablePieces[draggingPieceIndex];
+    if (!piece) return;
+
+    const onPointerMove = (e: PointerEvent) => {
+      hasDraggedRef.current = true;
+      const isTouch = e.pointerType === 'touch';
+      // Su touch solleviamo il pezzo di ~75px sopra il dito per non coprire né il pezzo né la griglia
+      const offsetY = isTouch ? 75 : 0;
+      const targetX = e.clientX;
+      const targetY = e.clientY - offsetY;
+      setDragPos({ x: targetX, y: targetY });
+
+      if (!boardGridRef.current) return;
+      const rect = boardGridRef.current.getBoundingClientRect();
+      const cellW = rect.width / GRID_SIZE;
+      const cellH = rect.height / GRID_SIZE;
+
+      const shape = piece.template.shape;
+      const R = shape.length;
+      const C = shape[0].length;
+
+      // Centro del pezzo allineato con (targetX, targetY)
+      const pieceLeft = targetX - (C * cellW) / 2;
+      const pieceTop = targetY - (R * cellH) / 2;
+
+      const col = Math.round((pieceLeft - rect.left) / cellW);
+      const row = Math.round((pieceTop - rect.top) / cellH);
+
+      if (row >= 0 && row + R <= GRID_SIZE && col >= 0 && col + C <= GRID_SIZE) {
+        setHoverRow(row);
+        setHoverCol(col);
+      } else {
+        setHoverRow(null);
+        setHoverCol(null);
+      }
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      if (boardGridRef.current) {
+        const isTouch = e.pointerType === 'touch';
+        const offsetY = isTouch ? 75 : 0;
+        const targetX = e.clientX;
+        const targetY = e.clientY - offsetY;
+
+        const rect = boardGridRef.current.getBoundingClientRect();
+        const cellW = rect.width / GRID_SIZE;
+        const cellH = rect.height / GRID_SIZE;
+
+        const shape = piece.template.shape;
+        const R = shape.length;
+        const C = shape[0].length;
+
+        const pieceLeft = targetX - (C * cellW) / 2;
+        const pieceTop = targetY - (R * cellH) / 2;
+
+        const col = Math.round((pieceLeft - rect.left) / cellW);
+        const row = Math.round((pieceTop - rect.top) / cellH);
+
+        if (row >= 0 && row + R <= GRID_SIZE && col >= 0 && col + C <= GRID_SIZE) {
+          if (canPlacePiece(grid, shape, row, col)) {
+            if ('vibrate' in navigator) {
+              try { navigator.vibrate(20); } catch {}
+            }
+            handlePlacePiece(row, col, draggingPieceIndex);
+          }
+        }
+      }
+
+      setDraggingPieceIndex(null);
+      setDragPos(null);
+      setHoverRow(null);
+      setHoverCol(null);
+    };
+
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+    };
+  }, [draggingPieceIndex, availablePieces, grid, isQuestionTime, isGameOver, isClearing]);
 
   // Question Time: Verifica Risposta
   const handleVerifyQuestion = (e: React.FormEvent) => {
@@ -599,20 +695,24 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
           )}
 
           <div
-            className="grid grid-cols-8 gap-1 sm:gap-1.5"
+            ref={boardGridRef}
+            className="grid grid-cols-8 gap-1 sm:gap-1.5 touch-none"
             onMouseLeave={() => {
-              setHoverRow(null);
-              setHoverCol(null);
+              if (draggingPieceIndex === null) {
+                setHoverRow(null);
+                setHoverCol(null);
+              }
             }}
           >
             {grid.map((row, rIdx) =>
               row.map((cellColor, cIdx) => {
-                // Calcola se la cella fa parte dell'anteprima del pezzo selezionato
+                // Calcola se la cella fa parte dell'anteprima del pezzo selezionato/trascinato
                 let isPreview = false;
                 let isValidPlacement = false;
+                const activePieceIdx = draggingPieceIndex !== null ? draggingPieceIndex : selectedPieceIndex;
 
-                if (selectedPieceIndex !== null && availablePieces[selectedPieceIndex] && hoverRow !== null && hoverCol !== null) {
-                  const piece = availablePieces[selectedPieceIndex];
+                if (activePieceIdx !== null && availablePieces[activePieceIdx] && hoverRow !== null && hoverCol !== null) {
+                  const piece = availablePieces[activePieceIdx];
                   const shape = piece.template.shape;
                   isValidPlacement = canPlacePiece(grid, shape, hoverRow, hoverCol);
 
@@ -627,6 +727,7 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
                 }
 
                 const isClearingCell = clearingCells.has(`${rIdx}-${cIdx}`);
+                const activePiece = activePieceIdx !== null ? availablePieces[activePieceIdx] : null;
 
                 return (
                   <button
@@ -634,7 +735,7 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
                     onClick={() => handlePlacePiece(rIdx, cIdx)}
                     disabled={isClearing}
                     onMouseEnter={() => {
-                      if (selectedPieceIndex !== null && !isClearing) {
+                      if (activePieceIdx !== null && !isClearing && draggingPieceIndex === null) {
                         setHoverRow(rIdx);
                         setHoverCol(cIdx);
                       }
@@ -646,8 +747,8 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
                         ? `${cellColor} shadow-inner`
                         : isPreview
                         ? isValidPlacement
-                          ? 'bg-indigo-400/60 scale-95 border-2 border-white'
-                          : 'bg-rose-500/40'
+                          ? `${activePiece ? activePiece.template.colorClass : 'bg-indigo-400'} opacity-75 scale-95 ring-2 ring-white shadow-md z-10`
+                          : 'bg-rose-500/60 scale-95 ring-2 ring-rose-400 z-10'
                         : 'bg-slate-800/80 hover:bg-slate-700/60 border border-slate-700/30'
                     }`}
                   />
@@ -666,21 +767,43 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
           <div className="flex lg:flex-col gap-2 sm:gap-3 justify-center items-center w-full">
             {availablePieces.map((piece, pIdx) => {
               const isSelected = selectedPieceIndex === pIdx;
+              const isDragging = draggingPieceIndex === pIdx;
               const fits = pieceCanFitAnywhere(grid, piece.template.shape);
 
               return (
-                <button
+                <div
                   key={piece.id}
-                  onClick={() => setSelectedPieceIndex(isSelected ? null : pIdx)}
-                  className={`p-2 sm:p-3 rounded-2xl border-2 transition-all flex items-center justify-center cursor-pointer min-h-[82px] min-w-[82px] sm:min-h-[100px] sm:min-w-[100px] ${
-                    isSelected
+                  onPointerDown={(e) => {
+                    if (!fits || isClearing || isQuestionTime || isGameOver) return;
+                    hasDraggedRef.current = false;
+                    const isTouch = e.pointerType === 'touch';
+                    const offsetY = isTouch ? 75 : 0;
+
+                    setDraggingPieceIndex(pIdx);
+                    setSelectedPieceIndex(pIdx);
+                    setDragPos({ x: e.clientX, y: e.clientY - offsetY });
+
+                    if (boardGridRef.current) {
+                      const rect = boardGridRef.current.getBoundingClientRect();
+                      setGhostCellSize(rect.width / GRID_SIZE);
+                    }
+                  }}
+                  onClick={() => {
+                    if (!hasDraggedRef.current) {
+                      setSelectedPieceIndex((prev) => (prev === pIdx ? null : pIdx));
+                    }
+                  }}
+                  className={`p-2 sm:p-3 rounded-2xl border-2 transition-all flex items-center justify-center cursor-pointer min-h-[82px] min-w-[82px] sm:min-h-[100px] sm:min-w-[100px] touch-none select-none ${
+                    isDragging
+                      ? 'opacity-25 scale-90 border-dashed border-indigo-400 bg-indigo-500/10'
+                      : isSelected
                       ? 'border-indigo-500 bg-indigo-500/20 scale-105 shadow-lg'
                       : fits
-                      ? 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-400'
+                      ? 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-400 active:scale-95'
                       : 'border-rose-300 dark:border-rose-900 bg-rose-50/20 opacity-40 cursor-not-allowed'
                   }`}
                 >
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-1 pointer-events-none">
                     {piece.template.shape.map((row, r) => (
                       <div key={r} className="flex gap-1">
                         {row.map((cell, c) => (
@@ -694,16 +817,50 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
                       </div>
                     ))}
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
 
-          <div className="text-[11px] text-slate-400 text-center hidden lg:block">
-            Seleziona un pezzo e tocca la griglia per posizionarlo. Riempi righe o colonne per cancellarle!
+          <div className="text-[11px] text-slate-400 text-center max-w-xs">
+            Trascina il pezzo con il dito sulla griglia o tocca per posizionarlo!
           </div>
         </div>
       </div>
+
+      {/* GHOST PIECE TRASCINATO FLUTTUANTE */}
+      {draggingPieceIndex !== null && dragPos && availablePieces[draggingPieceIndex] && createPortal(
+        <div
+          className="fixed pointer-events-none z-[9999] select-none transition-transform"
+          style={{
+            left: `${dragPos.x}px`,
+            top: `${dragPos.y}px`,
+            transform: 'translate(-50%, -50%)',
+          }}
+        >
+          <div className="flex flex-col gap-1 p-1">
+            {availablePieces[draggingPieceIndex].template.shape.map((row, r) => (
+              <div key={r} className="flex gap-1">
+                {row.map((cell, c) => (
+                  <div
+                    key={c}
+                    style={{
+                      width: `${ghostCellSize}px`,
+                      height: `${ghostCellSize}px`,
+                    }}
+                    className={`rounded-lg transition-colors ${
+                      cell === 1
+                        ? `${availablePieces[draggingPieceIndex].template.colorClass} shadow-2xl shadow-indigo-950/90 ring-2 ring-white/95 scale-95`
+                        : 'opacity-0'
+                    }`}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* QUESTION TIME MODAL */}
       {isQuestionTime && currentCard && createPortal(
