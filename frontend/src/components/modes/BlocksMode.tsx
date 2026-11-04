@@ -235,6 +235,16 @@ function getRandomPieces(): ActivePiece[] {
   return pieces;
 }
 
+// Algoritmo Fisher-Yates per mescolare in modo uniforme le carte all'avvio e ad ogni restart
+function shuffleCards(cards: Flashcard[]): Flashcard[] {
+  const arr = [...cards];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 export const BlocksMode: React.FC<BlocksModeProps> = ({
   deck,
   onBack,
@@ -264,8 +274,9 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
   const [isClearing, setIsClearing] = useState(false);
   const [soundMuted, setSoundMuted] = useState(!sfx.isEnabled());
 
-  // Question Time Modal State
+  // Question Time Modal State: Coda di carte mescolata casualmente
   const [isQuestionTime, setIsQuestionTime] = useState(false);
+  const [questionQueue, setQuestionQueue] = useState<Flashcard[]>(() => shuffleCards(deck.cards));
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [attemptsLeft, setAttemptsLeft] = useState(3);
   const [userAnswer, setUserAnswer] = useState('');
@@ -274,7 +285,13 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const questionInputRef = useRef<HTMLInputElement>(null);
 
-  const currentCard: Flashcard | undefined = deck.cards[currentCardIndex % deck.cards.length];
+  // Rimescola le carte ogni volta che si cambia o ricarica il mazzo
+  useEffect(() => {
+    setQuestionQueue(shuffleCards(deck.cards));
+    setCurrentCardIndex(0);
+  }, [deck]);
+
+  const currentCard: Flashcard | undefined = questionQueue[currentCardIndex];
 
   // Helper: check if a piece fits at (startR, startC)
   const canPlacePiece = (
@@ -585,6 +602,22 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
     };
   }, [draggingPieceIndex, availablePieces, grid, isQuestionTime, isGameOver, isClearing]);
 
+  // Avanza alla domanda successiva nella coda mescolata (rimescola se finisce il mazzo)
+  const advanceToNextQuestion = () => {
+    setCurrentCardIndex((prev) => {
+      const next = prev + 1;
+      if (next >= questionQueue.length) {
+        setQuestionQueue(shuffleCards(deck.cards));
+        return 0;
+      }
+      return next;
+    });
+    setAttemptsLeft(3);
+    setUserAnswer('');
+    setRevealedAnswer(false);
+    setQuestionError(null);
+  };
+
   // Question Time: Verifica Risposta
   const handleVerifyQuestion = (e: React.FormEvent) => {
     e.preventDefault();
@@ -601,7 +634,7 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
       const newPieces = getRandomPieces();
       setAvailablePieces(newPieces);
       setIsQuestionTime(false);
-      setCurrentCardIndex((prev) => prev + 1);
+      advanceToNextQuestion();
 
       // Controlla se con i nuovi 3 pezzi siamo in game over
       if (checkGameOver(grid, newPieces)) {
@@ -636,7 +669,7 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
     const newPieces = getRandomPieces();
     setAvailablePieces(newPieces);
     setIsQuestionTime(false);
-    setCurrentCardIndex((prev) => prev + 1);
+    advanceToNextQuestion();
 
     if (checkGameOver(grid, newPieces)) {
       setIsGameOver(true);
@@ -649,11 +682,7 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
 
   // Salta domanda con icona aggiornamento (↺)
   const handleSkipQuestion = () => {
-    setCurrentCardIndex((prev) => prev + 1);
-    setAttemptsLeft(3);
-    setUserAnswer('');
-    setRevealedAnswer(false);
-    setQuestionError(null);
+    advanceToNextQuestion();
   };
 
   // Riavvia Partita
@@ -670,7 +699,13 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
     setPeekBoard(false);
     setClearingCells(new Set());
     setIsClearing(false);
+    // Rimescola completamente le carte ad ogni nuova partita
+    setQuestionQueue(shuffleCards(deck.cards));
     setCurrentCardIndex(0);
+    setAttemptsLeft(3);
+    setUserAnswer('');
+    setRevealedAnswer(false);
+    setQuestionError(null);
   };
 
   return (
