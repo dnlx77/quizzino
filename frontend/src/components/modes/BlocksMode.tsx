@@ -425,11 +425,17 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
       setClearingCells(destroyedSet);
       setGrid(newGrid); // Mostra il pezzo posizionato e la riga/colonna completata
 
-      // Suono combo o distruzione linea
-      if (linesCleared > 1 || combo > 0) {
+      // La combo scatta ESCLUSIVAMENTE quando un singolo pezzo distrugge 2 o più linee contemporaneamente!
+      if (linesCleared > 1) {
         sfx.playCombo();
+        setCombo(linesCleared);
+        // Bonus moltiplicatore per distruzione simultanea (es: 2 righe = 2*100*2 = 400pt, 3 righe = 3*100*3 = 900pt)
+        pointsEarned += linesCleared * 100 * linesCleared;
       } else {
         sfx.playClear();
+        setCombo(0);
+        // Distruzione di 1 sola linea: 100 punti standard, nessuna combo
+        pointsEarned += 100;
       }
 
       // Effetto coriandoli per celebrare la distruzione
@@ -440,9 +446,6 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
         ticks: 120,
       });
 
-      const comboMultiplier = combo + linesCleared;
-      pointsEarned += linesCleared * 100 * comboMultiplier;
-      setCombo(comboMultiplier);
       const newScore = score + pointsEarned;
       setScore(newScore);
 
@@ -655,7 +658,10 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
 
       if (nextAttempts <= 0) {
         setRevealedAnswer(true);
-        setQuestionError('Tentativi esauriti! Ecco la risposta corretta:');
+        // Penalità per 3 errori consecutivi: -100 punti
+        const penalty = 100;
+        setScore((prev) => Math.max(0, prev - penalty));
+        setQuestionError(`Tentativi esauriti (-${penalty} pt)! Ecco la risposta corretta:`);
       } else {
         setQuestionError(`Risposta non esatta. Hai ancora ${nextAttempts} ${nextAttempts === 1 ? 'tentativo' : 'tentativi'}.`);
         setUserAnswer('');
@@ -680,8 +686,12 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
     }
   };
 
-  // Salta domanda con icona aggiornamento (↺)
+  // Salta domanda con icona aggiornamento (↺) con penalità punteggio
   const handleSkipQuestion = () => {
+    // Penalità per cambio domanda: -50 punti
+    const penalty = 50;
+    setScore((prev) => Math.max(0, prev - penalty));
+    sfx.playWrong();
     advanceToNextQuestion();
   };
 
@@ -950,11 +960,11 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
               <button
                 type="button"
                 onClick={handleSkipQuestion}
-                title="Prova una domanda diversa"
+                title="Cambia domanda (-50 pt)"
                 className="p-1.5 sm:px-2.5 sm:py-1 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5 text-xs font-semibold cursor-pointer shrink-0"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span className="text-xs">Cambia</span>
+                <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-xs">Cambia <span className="text-rose-400 font-bold">(-50 pt)</span></span>
               </button>
             </div>
 
