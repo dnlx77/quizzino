@@ -651,21 +651,31 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
         onRecordBlocksScore(score);
       }
     } else {
-      // Errore: riduci tentativi
+      // Errore: penalizza subito ad ogni tentativo fallito
       sfx.playWrong();
       const nextAttempts = attemptsLeft - 1;
       setAttemptsLeft(nextAttempts);
 
-      if (nextAttempts <= 0) {
-        setRevealedAnswer(true);
-        // Penalità per 3 errori consecutivi: -100 punti
-        const penalty = 100;
+      if (nextAttempts === 2) {
+        // 1° errore: -30 punti
+        const penalty = 30;
         setScore((prev) => Math.max(0, prev - penalty));
-        setQuestionError(`Tentativi esauriti (-${penalty} pt)! Ecco la risposta corretta:`);
-      } else {
-        setQuestionError(`Risposta non esatta. Hai ancora ${nextAttempts} ${nextAttempts === 1 ? 'tentativo' : 'tentativi'}.`);
+        setQuestionError(`Risposta non esatta (-${penalty} pt). Hai ancora 2 tentativi.`);
         setUserAnswer('');
         setTimeout(() => questionInputRef.current?.focus(), 50);
+      } else if (nextAttempts === 1) {
+        // 2° errore: -30 punti (totale finora -60 pt)
+        const penalty = 30;
+        setScore((prev) => Math.max(0, prev - penalty));
+        setQuestionError(`Risposta non esatta (-${penalty} pt). Hai ancora 1 tentativo.`);
+        setUserAnswer('');
+        setTimeout(() => questionInputRef.current?.focus(), 50);
+      } else {
+        // 3° errore: -40 punti (totale 100 pt sui 3 errori) e sblocco risposta corretta
+        const penalty = 40;
+        setScore((prev) => Math.max(0, prev - penalty));
+        setRevealedAnswer(true);
+        setQuestionError(`Tentativi esauriti (-${penalty} pt, totale -100 pt)! Ecco la risposta corretta:`);
       }
     }
   };
@@ -687,8 +697,9 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
   };
 
   // Salta domanda con icona aggiornamento (↺) con penalità punteggio
+  // Consentito ESCLUSIVAMENTE all'inizio (quando si hanno ancora 3 tentativi) per evitare exploit
   const handleSkipQuestion = () => {
-    // Penalità per cambio domanda: -50 punti
+    if (attemptsLeft < 3 || revealedAnswer) return;
     const penalty = 50;
     setScore((prev) => Math.max(0, prev - penalty));
     sfx.playWrong();
@@ -956,12 +967,21 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
                 ⭐ Question Time
               </span>
 
-              {/* Pulsante cambia domanda (↺) */}
+              {/* Pulsante cambia domanda (↺): abilitato solo a 3 tentativi per evitare exploit */}
               <button
                 type="button"
                 onClick={handleSkipQuestion}
-                title="Cambia domanda (-50 pt)"
-                className="p-1.5 sm:px-2.5 sm:py-1 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5 text-xs font-semibold cursor-pointer shrink-0"
+                disabled={attemptsLeft < 3 || revealedAnswer}
+                title={
+                  attemptsLeft < 3
+                    ? 'Puoi cambiare domanda solo prima di aver inserito tentativi errati'
+                    : 'Cambia domanda (-50 pt)'
+                }
+                className={`p-1.5 sm:px-2.5 sm:py-1 rounded-xl border transition flex items-center gap-1.5 text-xs font-semibold shrink-0 ${
+                  attemptsLeft < 3 || revealedAnswer
+                    ? 'opacity-35 border-slate-800 text-slate-500 cursor-not-allowed'
+                    : 'border-slate-700 hover:bg-slate-800 text-slate-300 cursor-pointer'
+                }`}
               >
                 <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
                 <span className="text-xs">Cambia <span className="text-rose-400 font-bold">(-50 pt)</span></span>
