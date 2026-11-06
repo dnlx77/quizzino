@@ -448,6 +448,10 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
 
       const newScore = score + pointsEarned;
       setScore(newScore);
+      if (!deck.bestBlocksScore || newScore > deck.bestBlocksScore) {
+        setIsNewRecord(true);
+        onRecordBlocksScore(newScore);
+      }
 
       // Dopo 340ms (durata dell'animazione CSS), rimuovi fisicamente i blocchi
       setTimeout(() => {
@@ -489,6 +493,10 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
       setGrid(newGrid);
       const newScore = score + pointsEarned;
       setScore(newScore);
+      if (!deck.bestBlocksScore || newScore > deck.bestBlocksScore) {
+        setIsNewRecord(true);
+        onRecordBlocksScore(newScore);
+      }
 
       // 4. Se sono finiti i 3 pezzi -> Question Time!
       if (remainingPieces.length === 0) {
@@ -708,6 +716,9 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
 
   // Riavvia Partita
   const handleRestart = () => {
+    if (!deck.bestBlocksScore || score > deck.bestBlocksScore) {
+      onRecordBlocksScore(score);
+    }
     setGrid(Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(null)));
     const initialPieces = getRandomPieces();
     setAvailablePieces(initialPieces);
@@ -729,12 +740,19 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
     setQuestionError(null);
   };
 
+  const handleBack = () => {
+    if (!deck.bestBlocksScore || score > deck.bestBlocksScore) {
+      onRecordBlocksScore(score);
+    }
+    onBack();
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-2 sm:px-6 py-3 sm:py-8 space-y-4 sm:space-y-6 overflow-x-hidden">
       {/* Top Header */}
       <div className="flex items-center justify-between gap-2">
         <button
-          onClick={onBack}
+          onClick={handleBack}
           className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-indigo-600 transition cursor-pointer truncate max-w-[150px] sm:max-w-none"
         >
           <ArrowLeft className="w-4 h-4 shrink-0" />
@@ -1131,7 +1149,7 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
                 <span>Gioca Ancora</span>
               </button>
               <button
-                onClick={onBack}
+                onClick={handleBack}
                 className="w-full py-2.5 rounded-xl sm:rounded-2xl border border-slate-700/90 bg-slate-800/60 hover:bg-slate-800 text-slate-300 font-bold text-sm transition cursor-pointer"
               >
                 Torna al Mazzo

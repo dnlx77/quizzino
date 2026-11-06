@@ -294,7 +294,7 @@ export function App() {
           bestMatchTimeMs: isBest ? timeMs : d.bestMatchTimeMs,
         };
         if (currentUser && isBest) {
-          api.saveDeck(updated).catch(console.error);
+          api.recordDeckScore(deckId, { bestMatchTimeMs: timeMs }).catch(console.error);
         }
         return updated;
       })
@@ -312,7 +312,7 @@ export function App() {
           bestBlocksScore: isBest ? score : d.bestBlocksScore,
         };
         if (currentUser && isBest) {
-          api.saveDeck(updated).catch(console.error);
+          api.recordDeckScore(deckId, { bestBlocksScore: score }).catch(console.error);
         }
         return updated;
       })

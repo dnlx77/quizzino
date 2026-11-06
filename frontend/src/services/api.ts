@@ -117,6 +117,13 @@ class ApiService {
     });
   }
 
+  public async recordDeckScore(deckId: string, scores: { bestBlocksScore?: number; bestMatchTimeMs?: number }): Promise<void> {
+    return this.request<void>('/decks/record', {
+      method: 'POST',
+      body: JSON.stringify({ deckId, ...scores }),
+    });
+  }
+
   // Study & SM-2 endpoints
   public async updateCardGrade(deckId: string, cardId: string, sm2: any): Promise<void> {
     return this.request<void>('/study/grade', {

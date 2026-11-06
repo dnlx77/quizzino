@@ -233,11 +233,13 @@ class DeckController {
                 }
 
                 $stmt = $pdo->prepare('
-                    INSERT INTO decks (id, user_id, title, description, category, term_lang, def_lang, best_match_time_ms, created_at, updated_at) 
-                    VALUES (:id, :uid, :title, :description, :category, :term_lang, :def_lang, :best_match_time_ms, :created_at, :updated_at)
+                    INSERT INTO decks (id, user_id, title, description, category, term_lang, def_lang, best_match_time_ms, best_blocks_score, created_at, updated_at) 
+                    VALUES (:id, :uid, :title, :description, :category, :term_lang, :def_lang, :best_match_time_ms, :best_blocks_score, :created_at, :updated_at)
                     ON DUPLICATE KEY UPDATE 
                         title = VALUES(title), description = VALUES(description), category = VALUES(category),
-                        term_lang = VALUES(term_lang), def_lang = VALUES(def_lang), best_match_time_ms = VALUES(best_match_time_ms),
+                        term_lang = VALUES(term_lang), def_lang = VALUES(def_lang), 
+                        best_match_time_ms = VALUES(best_match_time_ms),
+                        best_blocks_score = VALUES(best_blocks_score),
                         updated_at = VALUES(updated_at)
                 ');
                 $stmt->execute([
@@ -249,6 +251,7 @@ class DeckController {
                     'term_lang'          => $deck['termLang'] ?? 'it-IT',
                     'def_lang'           => $deck['defLang'] ?? 'it-IT',
                     'best_match_time_ms' => $deck['bestMatchTimeMs'] ?? null,
+                    'best_blocks_score'  => $deck['bestBlocksScore'] ?? null,
                     'created_at'         => $deck['createdAt'] ?? round(microtime(true) * 1000),
                     'updated_at'         => $deck['updatedAt'] ?? round(microtime(true) * 1000),
                 ]);
@@ -286,5 +289,50 @@ class DeckController {
             $pdo->rollBack();
             Response::error('Errore durante la sincronizzazione mazzi: ' . $e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Aggiorna atomicamente e leggermente i record (bestBlocksScore, bestMatchTimeMs)
+     */
+    public static function recordScore(array $authUser): void
+    {
+        $userId = (int)$authUser['uid'];
+        $data = json_decode(file_get_contents('php://input'), true) ?? [];
+        $deckId = trim($data['deckId'] ?? '');
+
+        if (empty($deckId)) {
+            Response::error('ID mazzo obbligatorio.', 400);
+        }
+
+        $bestBlocksScore = isset($data['bestBlocksScore']) && is_numeric($data['bestBlocksScore']) ? (int)$data['bestBlocksScore'] : null;
+        $bestMatchTimeMs = isset($data['bestMatchTimeMs']) && is_numeric($data['bestMatchTimeMs']) ? (int)$data['bestMatchTimeMs'] : null;
+
+        if ($bestBlocksScore === null && $bestMatchTimeMs === null) {
+            Response::error('Nessun punteggio fornito.', 400);
+        }
+
+        $pdo = Database::getConnection();
+
+        $clauses = [];
+        $params = ['id' => $deckId, 'uid' => $userId];
+
+        if ($bestBlocksScore !== null) {
+            $clauses[] = 'best_blocks_score = CASE WHEN best_blocks_score IS NULL OR :blocks_score > best_blocks_score THEN :blocks_score ELSE best_blocks_score END';
+            $params['blocks_score'] = $bestBlocksScore;
+        }
+
+        if ($bestMatchTimeMs !== null) {
+            $clauses[] = 'best_match_time_ms = CASE WHEN best_match_time_ms IS NULL OR :match_time < best_match_time_ms THEN :match_time ELSE best_match_time_ms END';
+            $params['match_time'] = $bestMatchTimeMs;
+        }
+
+        $clauses[] = 'updated_at = :updated_at';
+        $params['updated_at'] = round(microtime(true) * 1000);
+
+        $sql = 'UPDATE decks SET ' . implode(', ', $clauses) . ' WHERE id = :id AND user_id = :uid';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+
+        Response::json(['message' => 'Record aggiornato con successo.']);
     }
 }

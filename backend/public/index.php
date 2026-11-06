@@ -68,6 +68,11 @@ switch (true) {
         DeckController::syncAll($user);
         break;
 
+    case $uri === '/decks/record' && $method === 'POST':
+        $user = AuthMiddleware::authenticate();
+        DeckController::recordScore($user);
+        break;
+
     // Studio & SM-2
     case $uri === '/study/grade' && $method === 'POST':
         $user = AuthMiddleware::authenticate();
