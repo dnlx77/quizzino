@@ -296,7 +296,7 @@ class DeckController {
      */
     public static function recordScore(array $authUser): void
     {
-        $userId = (int)$authUser['uid'];
+        $userId = (int)($authUser['user_id'] ?? $authUser['uid'] ?? 0);
         $data = json_decode(file_get_contents('php://input'), true) ?? [];
         $deckId = trim($data['deckId'] ?? '');
 
@@ -317,22 +317,26 @@ class DeckController {
         $params = ['id' => $deckId, 'uid' => $userId];
 
         if ($bestBlocksScore !== null) {
-            $clauses[] = 'best_blocks_score = CASE WHEN best_blocks_score IS NULL OR :blocks_score > best_blocks_score THEN :blocks_score ELSE best_blocks_score END';
+            $clauses[] = 'best_blocks_score = GREATEST(COALESCE(best_blocks_score, 0), :blocks_score)';
             $params['blocks_score'] = $bestBlocksScore;
         }
 
         if ($bestMatchTimeMs !== null) {
-            $clauses[] = 'best_match_time_ms = CASE WHEN best_match_time_ms IS NULL OR :match_time < best_match_time_ms THEN :match_time ELSE best_match_time_ms END';
+            $clauses[] = 'best_match_time_ms = LEAST(COALESCE(best_match_time_ms, 2147483647), :match_time)';
             $params['match_time'] = $bestMatchTimeMs;
         }
 
         $clauses[] = 'updated_at = :updated_at';
         $params['updated_at'] = round(microtime(true) * 1000);
 
-        $sql = 'UPDATE decks SET ' . implode(', ', $clauses) . ' WHERE id = :id AND user_id = :uid';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
+        try {
+            $sql = 'UPDATE decks SET ' . implode(', ', $clauses) . ' WHERE id = :id AND user_id = :uid';
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
 
-        Response::json(['message' => 'Record aggiornato con successo.']);
+            Response::success(null, 'Record aggiornato con successo.');
+        } catch (Exception $e) {
+            Response::error('Errore aggiornamento record: ' . $e->getMessage(), 500);
+        }
     }
 }

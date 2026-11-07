@@ -285,38 +285,38 @@ export function App() {
 
   const handleRecordMatchTime = (deckId: string, timeMs: number) => {
     recordStudyActivity(6, false, true);
+    let isBest = false;
     setDecks((prev) =>
       prev.map((d) => {
         if (d.id !== deckId) return d;
-        const isBest = !d.bestMatchTimeMs || timeMs < d.bestMatchTimeMs;
-        const updated = {
+        isBest = !d.bestMatchTimeMs || timeMs < d.bestMatchTimeMs;
+        return {
           ...d,
           bestMatchTimeMs: isBest ? timeMs : d.bestMatchTimeMs,
         };
-        if (currentUser && isBest) {
-          api.recordDeckScore(deckId, { bestMatchTimeMs: timeMs }).catch(console.error);
-        }
-        return updated;
       })
     );
+    if (currentUser) {
+      api.recordDeckScore(deckId, { bestMatchTimeMs: timeMs }).catch(console.error);
+    }
   };
 
   const handleRecordBlocksScore = (deckId: string, score: number) => {
     recordStudyActivity(3, false, true);
+    let isBest = false;
     setDecks((prev) =>
       prev.map((d) => {
         if (d.id !== deckId) return d;
-        const isBest = !d.bestBlocksScore || score > d.bestBlocksScore;
-        const updated = {
+        isBest = !d.bestBlocksScore || score > d.bestBlocksScore;
+        return {
           ...d,
           bestBlocksScore: isBest ? score : d.bestBlocksScore,
         };
-        if (currentUser && isBest) {
-          api.recordDeckScore(deckId, { bestBlocksScore: score }).catch(console.error);
-        }
-        return updated;
       })
     );
+    if (currentUser) {
+      api.recordDeckScore(deckId, { bestBlocksScore: score }).catch(console.error);
+    }
   };
 
   const handleExportJson = () => {
