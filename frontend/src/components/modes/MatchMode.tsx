@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   ArrowLeft,
   Zap,
@@ -6,6 +6,7 @@ import {
   RotateCcw,
   Timer,
   AlertTriangle,
+  BookOpen,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Deck } from '../../types/quizzino';
@@ -33,9 +34,10 @@ function pickOneMeaning(raw: string): string {
 }
 
 function createMatchTiles(deck: Deck): MatchTile[] {
-  const subset = [...deck.cards]
+  const playable = deck.cards.filter((c) => !c.conceptOnly);
+  const subset = [...playable]
     .sort(() => Math.random() - 0.5)
-    .slice(0, Math.min(6, deck.cards.length));
+    .slice(0, Math.min(6, playable.length));
 
   const tiles: MatchTile[] = [];
   for (const card of subset) {
@@ -63,6 +65,10 @@ export const MatchMode: React.FC<MatchModeProps> = ({
   onBack,
   onRecordMatchTime,
 }) => {
+  const playableCards = useMemo(
+    () => deck.cards.filter((c) => !c.conceptOnly),
+    [deck.cards]
+  );
   const [tiles, setTiles] = useState<MatchTile[]>(() => createMatchTiles(deck));
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
   const [wrongPairIds, setWrongPairIds] = useState<string[]>([]);
@@ -143,6 +149,30 @@ export const MatchMode: React.FC<MatchModeProps> = ({
       }, 450);
     }
   };
+
+  if (playableCards.length < 2) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-16 text-center space-y-5">
+        <div className="w-16 h-16 rounded-3xl bg-purple-100 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto shadow-inner">
+          <BookOpen className="w-8 h-8" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+            Carte insufficienti per Abbina
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Servono almeno 2 carte non contrassegnate come <strong>Concetto / Teoria</strong> per poter giocare ad Abbina.
+          </p>
+        </div>
+        <button
+          onClick={onBack}
+          className="px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm transition cursor-pointer"
+        >
+          Torna al mazzo
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-2 sm:px-6 py-2 sm:py-6 space-y-2.5 sm:space-y-5">

@@ -12,6 +12,7 @@ export interface Flashcard {
   definition: string;
   hint?: string;
   starred?: boolean;
+  conceptOnly?: boolean;
   sm2: SM2Data;
 }
 

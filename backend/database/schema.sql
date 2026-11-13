@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS `cards` (
   `definition` TEXT NOT NULL,
   `hint` TEXT NULL,
   `starred` TINYINT(1) NOT NULL DEFAULT 0,
+  `concept_only` TINYINT(1) NOT NULL DEFAULT 0,
   `interval_days` INT NOT NULL DEFAULT 0,
   `repetitions` INT NOT NULL DEFAULT 0,
   `ease_factor` DECIMAL(4,2) NOT NULL DEFAULT 2.50,

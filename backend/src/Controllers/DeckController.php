@@ -30,12 +30,13 @@ class DeckController {
                 $cardsByDeck[$deckId] = [];
             }
             $cardsByDeck[$deckId][] = [
-                'id'         => $c['id'],
-                'term'       => $c['term'],
-                'definition' => $c['definition'],
-                'hint'       => !empty($c['hint']) ? $c['hint'] : null,
-                'starred'    => (bool)$c['starred'],
-                'sm2'        => [
+                'id'          => $c['id'],
+                'term'        => $c['term'],
+                'definition'  => $c['definition'],
+                'hint'        => !empty($c['hint']) ? $c['hint'] : null,
+                'starred'     => (bool)$c['starred'],
+                'conceptOnly' => !empty($c['concept_only']),
+                'sm2'         => [
                     'interval'     => (int)$c['interval_days'],
                     'repetitions'  => (int)$c['repetitions'],
                     'easeFactor'   => (float)$c['ease_factor'],
@@ -149,8 +150,8 @@ class DeckController {
             $delCards->execute(['deck_id' => $deckId]);
 
             $cardInsert = $pdo->prepare('
-                INSERT INTO cards (id, deck_id, term, definition, hint, starred, interval_days, repetitions, ease_factor, next_review, last_reviewed)
-                VALUES (:id, :deck_id, :term, :definition, :hint, :starred, :interval_days, :repetitions, :ease_factor, :next_review, :last_reviewed)
+                INSERT INTO cards (id, deck_id, term, definition, hint, starred, concept_only, interval_days, repetitions, ease_factor, next_review, last_reviewed)
+                VALUES (:id, :deck_id, :term, :definition, :hint, :starred, :concept_only, :interval_days, :repetitions, :ease_factor, :next_review, :last_reviewed)
             ');
 
             foreach ($cards as $idx => $c) {
@@ -167,6 +168,7 @@ class DeckController {
                     'definition'    => $definition,
                     'hint'          => !empty($c['hint']) ? trim($c['hint']) : null,
                     'starred'       => !empty($c['starred']) ? 1 : 0,
+                    'concept_only'  => !empty($c['conceptOnly']) ? 1 : 0,
                     'interval_days' => (int)($sm2['interval'] ?? 0),
                     'repetitions'   => (int)($sm2['repetitions'] ?? 0),
                     'ease_factor'   => (float)($sm2['easeFactor'] ?? 2.50),
@@ -261,8 +263,8 @@ class DeckController {
                 $delCards->execute(['deck_id' => $deckId]);
 
                 $cardInsert = $pdo->prepare('
-                    INSERT INTO cards (id, deck_id, term, definition, hint, starred, interval_days, repetitions, ease_factor, next_review, last_reviewed)
-                    VALUES (:id, :deck_id, :term, :definition, :hint, :starred, :interval_days, :repetitions, :ease_factor, :next_review, :last_reviewed)
+                    INSERT INTO cards (id, deck_id, term, definition, hint, starred, concept_only, interval_days, repetitions, ease_factor, next_review, last_reviewed)
+                    VALUES (:id, :deck_id, :term, :definition, :hint, :starred, :concept_only, :interval_days, :repetitions, :ease_factor, :next_review, :last_reviewed)
                 ');
 
                 foreach ($deck['cards'] ?? [] as $c) {
@@ -274,6 +276,7 @@ class DeckController {
                         'definition'    => $c['definition'],
                         'hint'          => $c['hint'] ?? null,
                         'starred'       => !empty($c['starred']) ? 1 : 0,
+                        'concept_only'  => !empty($c['conceptOnly']) ? 1 : 0,
                         'interval_days' => (int)($sm2['interval'] ?? 0),
                         'repetitions'   => (int)($sm2['repetitions'] ?? 0),
                         'ease_factor'   => (float)($sm2['easeFactor'] ?? 2.50),

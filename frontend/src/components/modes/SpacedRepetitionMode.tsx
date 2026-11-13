@@ -6,6 +6,7 @@ import {
   RotateCw,
   CheckCircle2,
   Sparkles,
+  BookOpen,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Deck, Flashcard, SM2Grade } from '../../types/quizzino';
@@ -109,10 +110,18 @@ export const SpacedRepetitionMode: React.FC<SpacedRepetitionModeProps> = ({
       {currentCard && (
         <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-10 shadow-xl space-y-8">
           <div className="flex items-center justify-between text-xs font-bold text-slate-400">
-            <span>
-              Ease Factor: {currentCard.sm2.easeFactor} • Intervallo attuale:{' '}
-              {currentCard.sm2.interval}g
-            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span>
+                Ease Factor: {currentCard.sm2.easeFactor} • Intervallo attuale:{' '}
+                {currentCard.sm2.interval}g
+              </span>
+              {currentCard.conceptOnly && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                  <BookOpen className="w-2.5 h-2.5" />
+                  <span>Concetto</span>
+                </span>
+              )}
+            </div>
             <button
               onClick={() => speakText(currentCard.term, deck.termLang)}
               className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:text-indigo-600 transition cursor-pointer"

@@ -23,6 +23,12 @@ class Database {
 
             try {
                 self::$instance = new PDO($dsn, $user, $pass, $options);
+                // Auto-migrazione leggera per nuove colonne
+                try {
+                    self::$instance->exec("ALTER TABLE `cards` ADD COLUMN IF NOT EXISTS `concept_only` TINYINT(1) NOT NULL DEFAULT 0");
+                } catch (Throwable $e) {
+                    // Ignora se la tabella non esiste ancora o se già presente
+                }
             } catch (PDOException $e) {
                 http_response_code(500);
                 header('Content-Type: application/json; charset=utf-8');

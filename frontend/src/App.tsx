@@ -254,6 +254,24 @@ export function App() {
     }
   };
 
+  const handleToggleConceptCard = (deckId: string, cardId: string) => {
+    setDecks((prev) =>
+      prev.map((d) => {
+        if (d.id !== deckId) return d;
+        return {
+          ...d,
+          cards: d.cards.map((c) =>
+            c.id === cardId ? { ...c, conceptOnly: !c.conceptOnly } : c
+          ),
+        };
+      })
+    );
+
+    if (currentUser) {
+      api.toggleCardConceptOnly(deckId, cardId).catch(console.error);
+    }
+  };
+
   const handleGradeCardSM2 = (
     deckId: string,
     cardId: string,
@@ -497,6 +515,9 @@ export function App() {
             }
             onToggleStarCard={(cardId) =>
               handleToggleStarCard(selectedDeck.id, cardId)
+            }
+            onToggleConceptCard={(cardId) =>
+              handleToggleConceptCard(selectedDeck.id, cardId)
             }
           />
         ) : activeMode === 'flashcards' ? (

@@ -15,6 +15,7 @@ import {
   Database,
   HardDrive,
   Puzzle,
+  BookOpen,
 } from 'lucide-react';
 import { Deck, StudyMode } from '../types/quizzino';
 import { speakText } from '../utils/tts';
@@ -26,6 +27,7 @@ interface DeckDetailProps {
   onStartMode: (mode: StudyMode) => void;
   onEditDeck: () => void;
   onToggleStarCard: (cardId: string) => void;
+  onToggleConceptCard: (cardId: string) => void;
 }
 
 export const DeckDetail: React.FC<DeckDetailProps> = ({
@@ -34,15 +36,19 @@ export const DeckDetail: React.FC<DeckDetailProps> = ({
   onStartMode,
   onEditDeck,
   onToggleStarCard,
+  onToggleConceptCard,
 }) => {
   const [filterText, setFilterText] = useState('');
   const [onlyStarred, setOnlyStarred] = useState(false);
+  const [onlyConcepts, setOnlyConcepts] = useState(false);
 
   const dueCount = deck.cards.filter((c) => isCardDue(c.sm2)).length;
   const starredCount = deck.cards.filter((c) => c.starred).length;
+  const conceptCount = deck.cards.filter((c) => c.conceptOnly).length;
 
   const visibleCards = deck.cards.filter((card) => {
     if (onlyStarred && !card.starred) return false;
+    if (onlyConcepts && !card.conceptOnly) return false;
     if (!filterText.trim()) return true;
     const q = filterText.toLowerCase();
     return (
@@ -221,7 +227,10 @@ export const DeckDetail: React.FC<DeckDetailProps> = ({
             </div>
 
             <button
-              onClick={() => setOnlyStarred(!onlyStarred)}
+              onClick={() => {
+                setOnlyStarred(!onlyStarred);
+                if (!onlyStarred) setOnlyConcepts(false);
+              }}
               className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition cursor-pointer ${
                 onlyStarred
                   ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300'
@@ -234,6 +243,25 @@ export const DeckDetail: React.FC<DeckDetailProps> = ({
                 }`}
               />
               <span>Difficili ({starredCount})</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setOnlyConcepts(!onlyConcepts);
+                if (!onlyConcepts) setOnlyStarred(false);
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition cursor-pointer ${
+                onlyConcepts
+                  ? 'bg-purple-50 dark:bg-purple-950/60 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300'
+                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              <BookOpen
+                className={`w-3.5 h-3.5 ${
+                  onlyConcepts ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400'
+                }`}
+              />
+              <span>Concetti ({conceptCount})</span>
             </button>
           </div>
         </div>
@@ -258,7 +286,15 @@ export const DeckDetail: React.FC<DeckDetailProps> = ({
                     <Volume2 className="w-4 h-4" />
                   </button>
                   <div className="min-w-0">
-                    <div className="leading-snug break-words">{card.term}</div>
+                    <div className="leading-snug break-words flex items-center gap-2 flex-wrap">
+                      <span>{card.term}</span>
+                      {card.conceptOnly && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/80">
+                          <BookOpen className="w-2.5 h-2.5" />
+                          <span>Concetto</span>
+                        </span>
+                      )}
+                    </div>
                     {card.hint && (
                       <div className="text-xs font-normal text-slate-400 mt-0.5">
                         💡 {card.hint}
@@ -279,8 +315,8 @@ export const DeckDetail: React.FC<DeckDetailProps> = ({
                   <span className="leading-snug break-words">{card.definition}</span>
                 </div>
 
-                {/* Colonna 3: Stato SM-2 + Preferito (larghezza fissa 3/12 su desktop) */}
-                <div className="sm:col-span-3 flex items-center justify-end gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
+                {/* Colonna 3: Stato SM-2 + Concetto + Preferito (larghezza fissa 3/12 su desktop) */}
+                <div className="sm:col-span-3 flex items-center justify-end gap-1.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
                   {mastered ? (
                     <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                       <CheckCircle2 className="w-3 h-3 shrink-0" />
@@ -296,6 +332,22 @@ export const DeckDetail: React.FC<DeckDetailProps> = ({
                       Tra {card.sm2.interval}g
                     </span>
                   )}
+
+                  <button
+                    onClick={() => onToggleConceptCard(card.id)}
+                    title={
+                      card.conceptOnly
+                        ? 'Contrassegnata come Concetto/Teoria (esclusa da Impara, Abbina e Blocchi). Clicca per riabilitarla nei giochi.'
+                        : 'Segna come Concetto/Teoria (verrà proposta solo in Flashcard e SM-2, esclusa da Impara, Abbina e Blocchi)'
+                    }
+                    className={`p-2 rounded-xl transition cursor-pointer shrink-0 ${
+                      card.conceptOnly
+                        ? 'bg-purple-100 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 hover:bg-purple-200'
+                        : 'text-slate-400 hover:text-purple-600 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <BookOpen className="w-4 h-4" />
+                  </button>
 
                   <button
                     onClick={() => onToggleStarCard(card.id)}

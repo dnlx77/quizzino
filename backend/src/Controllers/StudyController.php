@@ -71,6 +71,31 @@ class StudyController {
         Response::success(null, 'Stato preferita aggiornato');
     }
 
+    public static function toggleCardConceptOnly(array $authUser): void {
+        $userId = $authUser['user_id'];
+        $raw = file_get_contents('php://input');
+        $data = json_decode($raw, true) ?: [];
+
+        $cardId = trim($data['cardId'] ?? '');
+        $deckId = trim($data['deckId'] ?? '');
+
+        if (!$cardId || !$deckId) {
+            Response::error('Dati mancanti.', 422);
+        }
+
+        $pdo = Database::getConnection();
+        $check = $pdo->prepare('SELECT id FROM decks WHERE id = :deck_id AND user_id = :uid LIMIT 1');
+        $check->execute(['deck_id' => $deckId, 'uid' => $userId]);
+        if (!$check->fetch()) {
+            Response::error('Non autorizzato.', 403);
+        }
+
+        $stmt = $pdo->prepare('UPDATE cards SET concept_only = NOT concept_only WHERE id = :id AND deck_id = :deck_id');
+        $stmt->execute(['id' => $cardId, 'deck_id' => $deckId]);
+
+        Response::success(null, 'Stato concetto aggiornato');
+    }
+
     public static function recordActivity(array $authUser): void {
         $userId = $authUser['user_id'];
         $raw = file_get_contents('php://input');

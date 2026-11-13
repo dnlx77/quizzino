@@ -10,6 +10,7 @@ import {
   X,
   RotateCcw,
   Sparkles,
+  BookOpen,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Deck, Flashcard, SM2Grade } from '../../types/quizzino';
@@ -344,9 +345,17 @@ export const FlashcardMode: React.FC<FlashcardModeProps> = ({
             {/* FRONT FACE */}
             <div className="absolute inset-0 backface-hidden rounded-3xl bg-white dark:bg-slate-900 border-2 border-slate-200/90 dark:border-slate-800 shadow-xl p-5 sm:p-10 flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400">
-                  {invertSides ? 'Definizione' : 'Termine'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400">
+                    {invertSides ? 'Definizione' : 'Termine'}
+                  </span>
+                  {currentCard.conceptOnly && (
+                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1">
+                      <BookOpen className="w-3 h-3" />
+                      <span>Concetto</span>
+                    </span>
+                  )}
+                </div>
 
                 <div
                   className="flex items-center gap-2"
@@ -395,9 +404,17 @@ export const FlashcardMode: React.FC<FlashcardModeProps> = ({
             {/* BACK FACE */}
             <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-violet-950 text-white border-2 border-indigo-500/50 shadow-xl p-5 sm:p-10 flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
-                  {invertSides ? 'Termine' : 'Definizione'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
+                    {invertSides ? 'Termine' : 'Definizione'}
+                  </span>
+                  {currentCard.conceptOnly && (
+                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200 border border-purple-400/40 flex items-center gap-1">
+                      <BookOpen className="w-3 h-3" />
+                      <span>Concetto</span>
+                    </span>
+                  )}
+                </div>
 
                 <div
                   className="flex items-center gap-2"

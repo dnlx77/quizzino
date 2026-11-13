@@ -10,6 +10,7 @@ import {
   Upload,
   AlertCircle,
   Loader2,
+  BookOpen,
 } from 'lucide-react';
 import {
   Deck,
@@ -430,7 +431,28 @@ export const DeckEditorModal: React.FC<DeckEditorModalProps> = ({
                     className="p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-3"
                   >
                     <div className="flex items-center justify-between text-xs font-bold text-slate-400">
-                      <span>CARTA #{index + 1}</span>
+                      <div className="flex items-center gap-2">
+                        <span>CARTA #{index + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCards((prev) =>
+                              prev.map((c, i) =>
+                                i === index ? { ...c, conceptOnly: !c.conceptOnly } : c
+                              )
+                            )
+                          }
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer border ${
+                            card.conceptOnly
+                              ? 'bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800'
+                              : 'bg-white dark:bg-slate-900 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 border-slate-200 dark:border-slate-700'
+                          }`}
+                          title="Segna come Concetto / Teoria: verrà proposta solo in Flashcard e SM-2 ed esclusa da Impara, Abbina e Blocchi"
+                        >
+                          <BookOpen className="w-3 h-3" />
+                          <span>{card.conceptOnly ? 'Concetto (Solo Carte/SM-2)' : 'Segna come Concetto'}</span>
+                        </button>
+                      </div>
                       <button
                         type="button"
                         onClick={() => handleRemoveCard(index)}

@@ -84,6 +84,11 @@ switch (true) {
         StudyController::toggleCardStar($user);
         break;
 
+    case $uri === '/study/concept' && $method === 'POST':
+        $user = AuthMiddleware::authenticate();
+        StudyController::toggleCardConceptOnly($user);
+        break;
+
     case $uri === '/study/activity' && $method === 'POST':
         $user = AuthMiddleware::authenticate();
         StudyController::recordActivity($user);

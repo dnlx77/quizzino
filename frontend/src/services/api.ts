@@ -139,6 +139,13 @@ class ApiService {
     });
   }
 
+  public async toggleCardConceptOnly(deckId: string, cardId: string): Promise<void> {
+    return this.request<void>('/study/concept', {
+      method: 'POST',
+      body: JSON.stringify({ deckId, cardId }),
+    });
+  }
+
   public async recordActivity(params: { cardsStudied?: number; quizCompleted?: boolean; matchPlayed?: boolean }): Promise<void> {
     return this.request<void>('/study/activity', {
       method: 'POST',

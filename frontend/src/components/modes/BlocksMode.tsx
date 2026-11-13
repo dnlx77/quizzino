@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   ArrowLeft,
@@ -274,9 +274,15 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
   const [isClearing, setIsClearing] = useState(false);
   const [soundMuted, setSoundMuted] = useState(!sfx.isEnabled());
 
+  // Carte giocabili per il Question Time (esclude le carte marcate come Concetto)
+  const playableCards = useMemo(() => {
+    const filtered = deck.cards.filter((c) => !c.conceptOnly);
+    return filtered.length > 0 ? filtered : deck.cards;
+  }, [deck.cards]);
+
   // Question Time Modal State: Coda di carte mescolata casualmente
   const [isQuestionTime, setIsQuestionTime] = useState(false);
-  const [questionQueue, setQuestionQueue] = useState<Flashcard[]>(() => shuffleCards(deck.cards));
+  const [questionQueue, setQuestionQueue] = useState<Flashcard[]>(() => shuffleCards(playableCards));
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [attemptsLeft, setAttemptsLeft] = useState(3);
   const [userAnswer, setUserAnswer] = useState('');
@@ -287,9 +293,9 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
 
   // Rimescola le carte ogni volta che si cambia o ricarica il mazzo
   useEffect(() => {
-    setQuestionQueue(shuffleCards(deck.cards));
+    setQuestionQueue(shuffleCards(playableCards));
     setCurrentCardIndex(0);
-  }, [deck]);
+  }, [playableCards]);
 
   const currentCard: Flashcard | undefined = questionQueue[currentCardIndex];
 
@@ -618,7 +624,7 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
     setCurrentCardIndex((prev) => {
       const next = prev + 1;
       if (next >= questionQueue.length) {
-        setQuestionQueue(shuffleCards(deck.cards));
+        setQuestionQueue(shuffleCards(playableCards));
         return 0;
       }
       return next;
@@ -732,7 +738,7 @@ export const BlocksMode: React.FC<BlocksModeProps> = ({
     setClearingCells(new Set());
     setIsClearing(false);
     // Rimescola completamente le carte ad ogni nuova partita
-    setQuestionQueue(shuffleCards(deck.cards));
+    setQuestionQueue(shuffleCards(playableCards));
     setCurrentCardIndex(0);
     setAttemptsLeft(3);
     setUserAnswer('');

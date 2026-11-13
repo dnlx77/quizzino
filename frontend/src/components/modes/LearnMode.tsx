@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -9,6 +9,7 @@ import {
   RotateCcw,
   Sparkles,
   ArrowLeftRight,
+  BookOpen,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Deck, Flashcard, SM2Grade } from '../../types/quizzino';
@@ -133,10 +134,14 @@ export const LearnMode: React.FC<LearnModeProps> = ({
   onGradeCardSM2,
   onCompleteQuiz,
 }) => {
-  const sessionCardsRef = useRef<Flashcard[]>(deck.cards);
+  const playableCards = useMemo(
+    () => deck.cards.filter((c) => !c.conceptOnly),
+    [deck.cards]
+  );
+  const sessionCardsRef = useRef<Flashcard[]>(playableCards);
   const [sessionStarted, setSessionStarted] = useState(false);
   const [selectedSize, setSelectedSize] = useState<number>(() =>
-    Math.min(10, deck.cards.length)
+    Math.min(10, playableCards.length)
   );
   const [enableWritten, setEnableWritten] = useState(true);
   const [direction, setDirection] = useState<AskDirection>('ask_definition');
@@ -157,15 +162,15 @@ export const LearnMode: React.FC<LearnModeProps> = ({
   const [isCompleted, setIsCompleted] = useState(false);
 
   const startSession = (size: number) => {
-    // Ordina preferendo le carte con review più imminente (SM-2) o mescola
-    const shuffled = [...deck.cards].sort((a, b) => {
+    // Ordina preferendo le carte con review più imminente (SM-2) o mescola (escludendo carte concetto)
+    const shuffled = [...playableCards].sort((a, b) => {
       const aDue = a.sm2.nextReview;
       const bDue = b.sm2.nextReview;
       if (aDue !== bDue) return aDue - bDue;
       return Math.random() - 0.5;
     });
 
-    const subset = size >= deck.cards.length ? shuffled : shuffled.slice(0, size);
+    const subset = size >= playableCards.length ? shuffled : shuffled.slice(0, size);
     sessionCardsRef.current = subset;
     setActiveSubset(subset);
     setQueue(subset);
@@ -303,9 +308,34 @@ export const LearnMode: React.FC<LearnModeProps> = ({
     setSessionStarted(false);
   };
 
+  // 0. Se non ci sono carte giocabili (tutte contrassegnate come Concetto)
+  if (playableCards.length === 0) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-16 text-center space-y-5">
+        <div className="w-16 h-16 rounded-3xl bg-purple-100 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto shadow-inner">
+          <BookOpen className="w-8 h-8" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+            Nessuna carta per Impara
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Tutte le carte di questo mazzo sono contrassegnate come <strong>Concetto / Teoria</strong> e sono quindi escluse dai quiz. Puoi comunque studiarle e memorizzarle nelle modalità <strong>Carte</strong> e <strong>SM-2</strong>!
+          </p>
+        </div>
+        <button
+          onClick={onBack}
+          className="px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm transition cursor-pointer"
+        >
+          Torna al mazzo
+        </button>
+      </div>
+    );
+  }
+
   // 1. Schermata iniziale di configurazione lunghezza sessione
   if (!sessionStarted) {
-    const totalCards = deck.cards.length;
+    const totalCards = playableCards.length;
     const presets = [5, 10, 15, 20, 30].filter((n) => n < totalCards);
 
     return (
