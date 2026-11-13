@@ -3,7 +3,7 @@ node_modules/
 vendor/
 
 # Production build artifacts
-dist/
+# dist/ is tracked so VPS without Node.js can deploy directly from git
 dist-ssr/
 *.local
 
