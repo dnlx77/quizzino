@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ArrowLeft,
   RotateCw,
@@ -25,6 +25,27 @@ interface FlashcardModeProps {
   onCompleteSession: (cardsStudied: number) => void;
 }
 
+function getDynamicCardFontSize(text: string, isDef = false): string {
+  const len = text.length;
+  if (len > 320) {
+    return 'text-xs sm:text-sm font-normal leading-relaxed text-left sm:text-center';
+  }
+  if (len > 180) {
+    return 'text-sm sm:text-base font-medium leading-relaxed text-left sm:text-center';
+  }
+  if (len > 90) {
+    return 'text-base sm:text-xl font-semibold leading-normal';
+  }
+  if (len > 40) {
+    return isDef
+      ? 'text-lg sm:text-2xl font-bold leading-relaxed'
+      : 'text-xl sm:text-3xl font-extrabold leading-snug';
+  }
+  return isDef
+    ? 'text-xl sm:text-3xl font-bold leading-relaxed'
+    : 'text-2xl sm:text-4xl font-extrabold leading-snug';
+}
+
 export const FlashcardMode: React.FC<FlashcardModeProps> = ({
   deck,
   onBack,
@@ -40,6 +61,31 @@ export const FlashcardMode: React.FC<FlashcardModeProps> = ({
   const [knownIds, setKnownIds] = useState<string[]>([]);
   const [reviewAgainIds, setReviewAgainIds] = useState<string[]>([]);
   const [isFinished, setIsFinished] = useState(false);
+
+  const isScrollingRef = useRef(false);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    isScrollingRef.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartPos.current) return;
+    const dy = Math.abs(e.touches[0].clientY - touchStartPos.current.y);
+    const dx = Math.abs(e.touches[0].clientX - touchStartPos.current.x);
+    if (dy > 8 || dx > 8) {
+      isScrollingRef.current = true;
+    }
+  };
+
+  const handleCardClick = () => {
+    if (isScrollingRef.current) {
+      isScrollingRef.current = false;
+      return;
+    }
+    toggleFlip();
+  };
 
   const currentCard = studyCards[currentIndex];
 
@@ -335,16 +381,18 @@ export const FlashcardMode: React.FC<FlashcardModeProps> = ({
 
       {/* 3D Interactive Flashcard */}
       {currentCard && (
-        <div className="perspective-1000 w-full h-72 sm:h-96">
+        <div className="perspective-1000 w-full min-h-[320px] h-[360px] sm:h-[430px]">
           <div
-            onClick={toggleFlip}
+            onClick={handleCardClick}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
             className={`relative w-full h-full rounded-3xl transition-transform duration-500 transform-style-3d cursor-pointer select-none ${
               isFlipped ? 'rotate-y-180' : ''
             }`}
           >
             {/* FRONT FACE */}
-            <div className="absolute inset-0 backface-hidden rounded-3xl bg-white dark:bg-slate-900 border-2 border-slate-200/90 dark:border-slate-800 shadow-xl p-5 sm:p-10 flex flex-col justify-between">
-              <div className="flex items-center justify-between">
+            <div className="absolute inset-0 backface-hidden rounded-3xl bg-white dark:bg-slate-900 border-2 border-slate-200/90 dark:border-slate-800 shadow-xl p-4 sm:p-8 flex flex-col justify-between overflow-hidden">
+              <div className="flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400">
                     {invertSides ? 'Definizione' : 'Termine'}
@@ -384,26 +432,26 @@ export const FlashcardMode: React.FC<FlashcardModeProps> = ({
                 </div>
               </div>
 
-              <div className="my-auto text-center px-2">
-                <div className="text-xl sm:text-4xl font-extrabold text-slate-900 dark:text-white leading-snug break-words">
+              <div className="my-auto w-full max-h-[calc(100%-72px)] overflow-y-auto px-2 sm:px-4 py-2 overscroll-contain text-center">
+                <div className={`${getDynamicCardFontSize(frontText, false)} text-slate-900 dark:text-white break-words`}>
                   {frontText}
                 </div>
                 {currentCard.hint && !invertSides && (
-                  <div className="text-xs sm:text-sm text-slate-400 mt-3 break-words">
+                  <div className="text-xs sm:text-sm text-slate-400 mt-2.5 break-words">
                     💡 Suggerimento: {currentCard.hint}
                   </div>
                 )}
               </div>
 
-              <div className="text-center text-[11px] sm:text-xs font-semibold text-slate-400 flex items-center justify-center gap-1.5">
+              <div className="text-center text-[11px] sm:text-xs font-semibold text-slate-400 flex items-center justify-center gap-1.5 shrink-0">
                 <RotateCw className="w-3.5 h-3.5 shrink-0" />
                 <span>Tocca la carta per girarla</span>
               </div>
             </div>
 
             {/* BACK FACE */}
-            <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-violet-950 text-white border-2 border-indigo-500/50 shadow-xl p-5 sm:p-10 flex flex-col justify-between">
-              <div className="flex items-center justify-between">
+            <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-violet-950 text-white border-2 border-indigo-500/50 shadow-xl p-4 sm:p-8 flex flex-col justify-between overflow-hidden">
+              <div className="flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
                     {invertSides ? 'Termine' : 'Definizione'}
@@ -430,13 +478,13 @@ export const FlashcardMode: React.FC<FlashcardModeProps> = ({
                 </div>
               </div>
 
-              <div className="my-auto text-center px-2">
-                <div className="text-lg sm:text-3xl font-bold leading-relaxed break-words">
+              <div className="my-auto w-full max-h-[calc(100%-72px)] overflow-y-auto px-2 sm:px-4 py-2 overscroll-contain text-center">
+                <div className={`${getDynamicCardFontSize(backText, true)} break-words`}>
                   {backText}
                 </div>
               </div>
 
-              <div className="text-center text-[11px] sm:text-xs font-semibold text-indigo-300/80 flex items-center justify-center gap-1.5">
+              <div className="text-center text-[11px] sm:text-xs font-semibold text-indigo-300/80 flex items-center justify-center gap-1.5 shrink-0">
                 <RotateCw className="w-3.5 h-3.5 shrink-0" />
                 <span>Tocca per tornare al fronte</span>
               </div>
