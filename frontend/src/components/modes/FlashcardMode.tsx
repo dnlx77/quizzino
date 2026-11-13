@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Deck, Flashcard, SM2Grade } from '../../types/quizzino';
-import { speakText } from '../../utils/tts';
+import { speakText, getDisplayMeaningsList } from '../../utils/tts';
 import { sfx } from '../../utils/soundEffects';
 
 interface FlashcardModeProps {
@@ -433,9 +433,27 @@ export const FlashcardMode: React.FC<FlashcardModeProps> = ({
               </div>
 
               <div className="my-auto w-full max-h-[calc(100%-72px)] overflow-y-auto px-2 sm:px-4 py-2 overscroll-contain text-center">
-                <div className={`${getDynamicCardFontSize(frontText, false)} text-slate-900 dark:text-white break-words`}>
-                  {frontText}
-                </div>
+                {getDisplayMeaningsList(frontText).length > 1 ? (
+                  <div className="space-y-2 sm:space-y-2.5 text-left inline-block max-w-full my-auto">
+                    {getDisplayMeaningsList(frontText).map((meaning, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2.5 sm:gap-3 py-1.5 px-3 sm:px-4 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-sm"
+                      >
+                        <span className="flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-extrabold text-xs sm:text-sm shrink-0">
+                          {index + 1}
+                        </span>
+                        <span className="text-sm sm:text-xl font-bold text-slate-900 dark:text-white leading-snug break-words">
+                          {meaning}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={`${getDynamicCardFontSize(frontText, false)} text-slate-900 dark:text-white break-words`}>
+                    {frontText}
+                  </div>
+                )}
                 {currentCard.hint && !invertSides && (
                   <div className="text-xs sm:text-sm text-slate-400 mt-2.5 break-words">
                     💡 Suggerimento: {currentCard.hint}
@@ -479,9 +497,27 @@ export const FlashcardMode: React.FC<FlashcardModeProps> = ({
               </div>
 
               <div className="my-auto w-full max-h-[calc(100%-72px)] overflow-y-auto px-2 sm:px-4 py-2 overscroll-contain text-center">
-                <div className={`${getDynamicCardFontSize(backText, true)} break-words`}>
-                  {backText}
-                </div>
+                {getDisplayMeaningsList(backText).length > 1 ? (
+                  <div className="space-y-2 sm:space-y-2.5 text-left inline-block max-w-full my-auto">
+                    {getDisplayMeaningsList(backText).map((meaning, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2.5 sm:gap-3 py-2 px-3 sm:px-4 rounded-xl sm:rounded-2xl bg-white/10 border border-white/15 backdrop-blur-sm shadow-sm"
+                      >
+                        <span className="flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-indigo-500/30 text-indigo-200 font-extrabold text-xs sm:text-sm shrink-0">
+                          {index + 1}
+                        </span>
+                        <span className="text-sm sm:text-xl font-bold text-white leading-snug break-words">
+                          {meaning}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={`${getDynamicCardFontSize(backText, true)} break-words`}>
+                    {backText}
+                  </div>
+                )}
               </div>
 
               <div className="text-center text-[11px] sm:text-xs font-semibold text-indigo-300/80 flex items-center justify-center gap-1.5 shrink-0">

@@ -4,7 +4,9 @@ export function speakText(text: string, lang = 'it-IT') {
   }
   try {
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    // Pulisce separatori come '/' o ';' rimpiazzandoli con virgole per una pronuncia fluida
+    const cleanSpeech = text.replace(/[\/;|\n]+/g, ', ');
+    const utterance = new SpeechSynthesisUtterance(cleanSpeech);
     utterance.lang = lang;
     utterance.rate = 0.95;
     const voices = window.speechSynthesis.getVoices();
@@ -93,14 +95,36 @@ export function extractValidMeanings(rawExpected: string): string[] {
 }
 
 /**
- * Restituisce l'elenco pulito dei significati separati per mostrarli nella UI.
+ * Restituisce l'elenco pulito dei singoli significati se presenti.
+ * Riconosce separatori espliciti come /, ;, |, a capo e liste numerate (1. 2. ...).
  */
 export function getDisplayMeaningsList(rawExpected: string): string[] {
-  const parts = rawExpected
-    .split(/[\/;|,]/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  return parts.length > 1 ? parts : [rawExpected.trim()];
+  if (!rawExpected) return [];
+  const trimmed = rawExpected.trim();
+
+  // 1. Separatori espliciti: / ; | o a capo
+  if (/[\/;|\n]/.test(trimmed)) {
+    const parts = trimmed
+      .split(/[\/;|\n]+/)
+      .map((p) => p.replace(/^\s*\d+[\.\)\-]\s*/, '').trim())
+      .filter(Boolean);
+    if (parts.length > 1) {
+      return parts;
+    }
+  }
+
+  // 2. Formato elenco numerato interno, es. "1. pronto 2. a posto 3. tutto a posto"
+  if (/(?:^|\s)\d+[\.\)]\s+/.test(trimmed)) {
+    const parts = trimmed
+      .split(/(?:^|\s)\d+[\.\)]\s+/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (parts.length > 1) {
+      return parts;
+    }
+  }
+
+  return [trimmed];
 }
 
 export function checkWrittenAnswer(

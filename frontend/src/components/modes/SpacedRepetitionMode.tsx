@@ -11,7 +11,7 @@ import {
 import confetti from 'canvas-confetti';
 import { Deck, Flashcard, SM2Grade } from '../../types/quizzino';
 import { isCardDue, previewNextIntervalLabel } from '../../utils/sm2';
-import { speakText } from '../../utils/tts';
+import { speakText, getDisplayMeaningsList } from '../../utils/tts';
 
 interface SpacedRepetitionModeProps {
   deck: Deck;
@@ -167,9 +167,27 @@ export const SpacedRepetitionMode: React.FC<SpacedRepetitionModeProps> = ({
                     <Volume2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <div className="text-lg sm:text-2xl font-bold text-slate-800 dark:text-slate-100">
-                  {currentCard.definition}
-                </div>
+                {getDisplayMeaningsList(currentCard.definition).length > 1 ? (
+                  <div className="space-y-2 text-left inline-block max-w-full pt-1">
+                    {getDisplayMeaningsList(currentCard.definition).map((m, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-2.5 py-1.5 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 shadow-sm"
+                      >
+                        <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-extrabold text-xs shrink-0">
+                          {idx + 1}
+                        </span>
+                        <span className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100 break-words">
+                          {m}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-lg sm:text-2xl font-bold text-slate-800 dark:text-slate-100 break-words">
+                    {currentCard.definition}
+                  </div>
+                )}
               </div>
 
               {/* 4 SM-2 Grading Buttons */}
